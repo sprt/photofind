@@ -1,14 +1,25 @@
 package photofind
 
 import (
-	"fmt"
+	"html/template"
 	"net/http"
 )
 
+var templates = template.Must(template.ParseFiles(
+	"templates/index.html",
+))
+
 func init() {
-	http.HandleFunc("/", handler)
+	http.HandleFunc("/", indexHandler)
 }
 
-func handler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, "photofind")
+func indexHandler(w http.ResponseWriter, r *http.Request) {
+	renderTemplate(w, "index", nil)
+}
+
+func renderTemplate(w http.ResponseWriter, tpl string, data interface{}) {
+	err := templates.ExecuteTemplate(w, tpl+".html", data)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }
