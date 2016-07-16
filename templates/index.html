@@ -47,6 +47,10 @@ function getImageSize(dataURL, callback) {
   image.src = dataURL;
 }
 
+function sanitizeString(s) {
+  return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
+
 function onUploadFormSubmit(e) {
   e.preventDefault();
   var req = new XMLHttpRequest();
@@ -81,7 +85,7 @@ function onUploadFormSubmit(e) {
 function onSearchFormSubmit(e) {
   e.preventDefault();
 
-  var q = searchForm["q"].value;
+  var q = sanitizeString(searchForm["q"].value);
   var canvases = resultImages.querySelectorAll("canvas");
 
   for (var i = 0; i < resp.length; i++) {
@@ -90,7 +94,7 @@ function onSearchFormSubmit(e) {
 
     for (var j = 1; j < annotations.length; j++) {
       var desc = annotations[j].description;
-      if (desc !== q) {
+      if (sanitizeString(desc) !== q) {
         continue;
       }
 
