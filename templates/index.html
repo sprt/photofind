@@ -1,16 +1,112 @@
 <!DOCTYPE html>
 <html lang="en">
 <meta charset="utf-8">
+
 <title>photofind</title>
+
+<style>
+</style>
 
 <h1>photofind</h1>
 
-<form method="post" enctype="multipart/form-data">
+<form name="upload">
   {{.csrfField}}
-  <div>
-    <input name="images" type="file" accept="image/*" multiple>
-  </div>
-  <div>
-    <button type="submit">Submit</button>
-  </div>
+  <input name="images" type="file" accept="image/*" multiple>
+  <button type="submit">Upload</button>
 </form>
+
+<div class="results">
+  <form name="search">
+    <input name="q" type="search" autocomplete="off">
+    <button type="submit">Search</button>
+  </form>
+  <div class="images"></div>
+</div>
+
+<script>
+var FILL_STYLE = "hsla(60, 100%, 50%, 0.5)";
+
+var uploadForm = document.forms["upload"];
+var searchForm = document.forms["search"];
+var resultImages = document.querySelector(".results .images");
+var resp;
+
+function getDataURL(file, callback) {
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    callback(reader.result);
+  };
+  reader.readAsDataURL(file);
+}
+
+function getImageSize(dataURL, callback) {
+  var image = new Image();
+  image.onload = function(e) {
+    callback({width: image.width, height: image.height});
+  };
+  image.src = dataURL;
+}
+
+function onUploadFormSubmit(e) {
+  e.preventDefault();
+  var req = new XMLHttpRequest();
+
+  req.onload = function(e) {
+    resp = JSON.parse(req.responseText);
+    resultImages.innerHTML = "";
+
+    var files = uploadForm["images"].files;
+    for (var i = 0; i < files.length; i++) {
+      getDataURL(files[i], function(dataURL) {
+        getImageSize(dataURL, function(imageSize) {
+          var div = document.createElement("div");
+          div.classList.add("image");
+
+          var canvas = document.createElement("canvas");
+          canvas.width = imageSize.width;
+          canvas.height = imageSize.height;
+          canvas.style.backgroundImage = 'url("' + dataURL + '")';
+          div.appendChild(canvas);
+
+          resultImages.appendChild(div);
+        });
+      });
+    }
+  };
+
+  req.open("POST", "/find");
+  req.send(new FormData(uploadForm));
+}
+
+function onSearchFormSubmit(e) {
+  e.preventDefault();
+
+  var q = searchForm["q"].value;
+  var canvases = resultImages.querySelectorAll("canvas");
+
+  for (var i = 0; i < resp.length; i++) {
+    canvases[i].width = canvases[i].width;
+    var annotations = resp[i].textAnnotations;
+
+    for (var j = 1; j < annotations.length; j++) {
+      var desc = annotations[j].description;
+      if (desc !== q) {
+        continue;
+      }
+
+      var ctx = canvases[i].getContext("2d");
+      var vertices = annotations[j].boundingPoly.vertices;
+      ctx.beginPath();
+      ctx.moveTo(vertices[0].x, vertices[0].y);
+      ctx.lineTo(vertices[1].x, vertices[1].y);
+      ctx.lineTo(vertices[2].x, vertices[2].y);
+      ctx.lineTo(vertices[3].x, vertices[3].y);
+      ctx.fillStyle = FILL_STYLE;
+      ctx.fill();
+    }
+  }
+}
+
+uploadForm.addEventListener("submit", onUploadFormSubmit);
+searchForm.addEventListener("submit", onSearchFormSubmit);
+</script>

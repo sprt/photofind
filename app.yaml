@@ -4,6 +4,9 @@ api_version: go1
 includes:
 - secrets.yaml
 
+env_variables:
+  GOOGLE_APPLICATION_CREDENTIALS: "service_account.json"
+
 handlers:
-- url: /*.
+- url: /.*
   script: _go_app
