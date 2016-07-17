@@ -5,6 +5,58 @@
 <title>photofind</title>
 
 <style>
+body {
+  color: #222;
+  font: 13px -apple-system, sans-serif;
+  text-align: center;
+}
+
+h1 {
+  font-weight: normal;
+}
+
+input[type=file] {
+  background: #fbfbfb;
+  border: 1px solid #c8c8c8;
+  border-radius: 2px;
+  padding: 1px;
+}
+
+form[name=search] {
+  margin-top: 1em;
+  margin-bottom: 2em;
+}
+
+form[name=upload] {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+  margin-left: calc(0.5em + 16px);
+}
+
+input[name=images] {
+  margin-right: 0.5em;
+}
+
+.spinner {
+  visibility: hidden;
+}
+
+output {
+  color: #444;
+  display: block;
+  font-size: 0.9em;
+  line-height: 1.5em;
+}
+
+.results {
+  display: none;
+}
+
+.results canvas {
+  background-size: 100% 100%;
+  max-width: 100%;
+}
 </style>
 
 <h1>photofind</h1>
@@ -12,13 +64,14 @@
 <form name="upload">
   {{.csrfField}}
   <input name="images" type="file" accept="image/*" multiple>
-  <button type="submit">Upload</button>
+  <img class="spinner" src="/static/spinner.gif" alt="Loading" width="16" height="16">
 </form>
 
 <div class="results">
   <form name="search">
-    <input name="q" type="search" autocomplete="off">
+    <input name="q" type="search" autocomplete="off" autofocus>
     <button type="submit">Search</button>
+    <output></output>
   </form>
   <div class="images"></div>
 </div>
@@ -28,7 +81,10 @@ var FILL_STYLE = "hsla(60, 100%, 50%, 0.5)";
 
 var uploadForm = document.forms["upload"];
 var searchForm = document.forms["search"];
-var resultImages = document.querySelector(".results .images");
+var results = document.querySelector(".results");
+var resultImages = results.querySelector(".images");
+var spinner = document.querySelector(".spinner");
+var output = document.querySelector("output");
 var resp;
 
 function getDataURL(file, callback) {
@@ -56,10 +112,19 @@ function sanitizeString(s) {
 
 function onUploadFormSubmit(e) {
   e.preventDefault();
+
+  spinner.style.visibility = "visible";
+  output.innerHTML = "";
+
   var req = new XMLHttpRequest();
 
   req.onload = function(e) {
     resp = JSON.parse(req.responseText);
+
+    spinner.style.visibility = "hidden";
+    results.style.display = "block";
+    searchForm["q"].focus();
+    searchForm["q"].select();
     resultImages.innerHTML = "";
 
     var files = uploadForm["images"].files;
@@ -89,6 +154,9 @@ function onSearchFormSubmit(e) {
   e.preventDefault();
 
   var q = sanitizeString(searchForm["q"].value);
+  var _matches = {};
+  var matchesTotal = 0;
+  var matchesImages = 0;
   var canvases = resultImages.querySelectorAll("canvas");
 
   for (var i = 0; i < resp.length; i++) {
@@ -101,6 +169,12 @@ function onSearchFormSubmit(e) {
         continue;
       }
 
+      if (_matches[i] === undefined) {
+        _matches[i] = true;
+        matchesImages++;
+      }
+      matchesTotal++;
+
       var ctx = canvases[i].getContext("2d");
       var vertices = annotations[j].boundingPoly.vertices;
       ctx.beginPath();
@@ -112,8 +186,15 @@ function onSearchFormSubmit(e) {
       ctx.fill();
     }
   }
+
+  var outputStr = "(" + matchesTotal + (matchesTotal == 1 ? " match" : " matches");
+  if (matchesImages > 1 && resp.length > 1) {
+    outputStr += " in " + matchesImages + (matchesImages == 1 ? " image" : " images");
+  }
+  outputStr += ")";
+  output.innerHTML = outputStr;
 }
 
-uploadForm.addEventListener("submit", onUploadFormSubmit);
+uploadForm["images"].addEventListener("change", onUploadFormSubmit);
 searchForm.addEventListener("submit", onSearchFormSubmit);
 </script>

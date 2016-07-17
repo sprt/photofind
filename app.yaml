@@ -8,5 +8,7 @@ env_variables:
   GOOGLE_APPLICATION_CREDENTIALS: "service_account.json"
 
 handlers:
+- url: /static
+  static_dir: static
 - url: /.*
   script: _go_app
