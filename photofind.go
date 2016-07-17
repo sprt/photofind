@@ -12,8 +12,7 @@ import (
 )
 
 const (
-	maxImageSize = 2 << 20
-	maxImages    = 4
+	maxSize = 8 << 20
 )
 
 var (
@@ -51,7 +50,7 @@ func findHandler(ctx context.Context, w http.ResponseWriter, r *http.Request) er
 		return nil
 	}
 
-	err := r.ParseMultipartForm(maxImages * maxImageSize)
+	err := r.ParseMultipartForm(maxSize)
 	if err != nil {
 		return err
 	}
@@ -59,7 +58,6 @@ func findHandler(ctx context.Context, w http.ResponseWriter, r *http.Request) er
 	imgs, ok := r.MultipartForm.File["images"]
 	if !ok {
 		w.WriteHeader(http.StatusBadRequest)
-		return nil
 	}
 
 	resps, err := annotateImages(ctx, imgs)

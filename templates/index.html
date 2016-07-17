@@ -42,7 +42,7 @@ input[name=images] {
   visibility: hidden;
 }
 
-output {
+.small {
   color: #444;
   display: block;
   font-size: 0.9em;
@@ -66,12 +66,13 @@ output {
   <input name="images" type="file" accept="image/*" multiple>
   <img class="spinner" src="/static/spinner.gif" alt="Loading" width="16" height="16">
 </form>
+<div class="small">(max. 16 images and 8 MB)</div>
 
 <div class="results">
   <form name="search">
     <input name="q" type="search" autocomplete="off" autofocus>
     <button type="submit">Search</button>
-    <output></output>
+    <output class="small"></output>
   </form>
   <div class="images"></div>
 </div>
