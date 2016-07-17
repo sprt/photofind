@@ -1,6 +1,8 @@
 package photofind
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -19,9 +21,10 @@ import (
 )
 
 const (
-	accessCodeLife = 24 * time.Hour
-	cookieLife     = 365 * 24 * time.Hour
-	maxUploadSize  = 8 << 20
+	accessCodeLife   = 24 * time.Hour
+	accessCodeLength = 6
+	cookieLife       = 365 * 24 * time.Hour
+	maxUploadSize    = 8 << 20
 )
 
 var (
@@ -58,18 +61,14 @@ func init() {
 
 func indexHandler(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	authorized := checkAccess(ctx, w, r)
-	encodedKey := r.URL.Query().Get("code")
+	id := r.URL.Query().Get("code")
 	cuser := user.Current(ctx)
 
-	if !authorized && encodedKey != "" && (cuser == nil || !cuser.Admin) {
-		key, err := datastore.DecodeKey(encodedKey)
-		if err != nil {
-			return err
-		}
-
+	if !authorized && id != "" && (cuser == nil || !cuser.Admin) {
 		var encodedCookie string
-		err = datastore.RunInTransaction(ctx, func(ctx context.Context) error {
+		err := datastore.RunInTransaction(ctx, func(ctx context.Context) error {
 			code := new(AccessCode)
+			key := datastore.NewKey(ctx, "AccessCode", id, 0, nil)
 			err := datastore.Get(ctx, key, code)
 			if err != nil {
 				return err
@@ -85,7 +84,7 @@ func indexHandler(ctx context.Context, w http.ResponseWriter, r *http.Request) e
 				return err
 			}
 
-			encodedCookie, err = s.Encode("access_code", encodedKey)
+			encodedCookie, err = s.Encode("access_code", id)
 			if err != nil {
 				return err
 			}
@@ -155,15 +154,22 @@ func shareHandler(ctx context.Context, w http.ResponseWriter, r *http.Request) e
 		CreatedByEmail: cuser.Email,
 		CreatedByAdmin: cuser.Admin,
 	}
-	incomplete := datastore.NewIncompleteKey(ctx, "AccessCode", nil)
 
-	key, err := datastore.Put(ctx, incomplete, code)
+	b := make([]byte, accessCodeLength)
+	_, err := rand.Read(b)
 	if err != nil {
 		return err
 	}
+	id := base64.RawURLEncoding.EncodeToString(b)
 
-	w.Header().Set("Content-Type", "text/html")
-	fmt.Fprintf(w, `<a href="/?code=%s">Access link</a>`, key.Encode())
+	key := datastore.NewKey(ctx, "AccessCode", id, 0, nil)
+	_, err = datastore.Put(ctx, key, code)
+	if err != nil {
+		return err
+	}
+	// TODO: remove unused after X time
+
+	fmt.Fprintf(w, `<a href="/?code=%s">Access link</a>`, id)
 	return nil
 }
 
