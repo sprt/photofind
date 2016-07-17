@@ -48,7 +48,10 @@ function getImageSize(dataURL, callback) {
 }
 
 function sanitizeString(s) {
-  return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  return s.normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/^[.,\/#!$%\^&\*;:{}=\-_`~()]+|[.,\/#!$%\^&\*;:{}=\-_`~()]+$/g, "")
+          .toLowerCase();
 }
 
 function onUploadFormSubmit(e) {
