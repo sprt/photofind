@@ -17,9 +17,7 @@ const (
 
 var (
 	secret    = must(os.Getenv("SECRET"))
-	templates = template.Must(template.ParseFiles(
-		"templates/index.html",
-	))
+	templates = template.Must(template.ParseFiles("templates/index.html"))
 )
 
 type appHandler func(context.Context, http.ResponseWriter, *http.Request) error
@@ -58,6 +56,7 @@ func findHandler(ctx context.Context, w http.ResponseWriter, r *http.Request) er
 	imgs, ok := r.MultipartForm.File["images"]
 	if !ok {
 		w.WriteHeader(http.StatusBadRequest)
+		return nil
 	}
 
 	resps, err := annotateImages(ctx, imgs)
