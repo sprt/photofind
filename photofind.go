@@ -16,7 +16,9 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/appengine"
 	"google.golang.org/appengine/datastore"
+	"google.golang.org/appengine/delay"
 	"google.golang.org/appengine/log"
+	"google.golang.org/appengine/taskqueue"
 	"google.golang.org/appengine/user"
 )
 
@@ -67,14 +69,13 @@ func indexHandler(ctx context.Context, w http.ResponseWriter, r *http.Request) e
 	if !authorized && id != "" && (cuser == nil || !cuser.Admin) {
 		var encodedCookie string
 		err := datastore.RunInTransaction(ctx, func(ctx context.Context) error {
-			code := new(AccessCode)
 			key := datastore.NewKey(ctx, "AccessCode", id, 0, nil)
+			code := new(AccessCode)
 			err := datastore.Get(ctx, key, code)
 			if err != nil {
 				return err
 			}
-
-			if code.Used || time.Now().After(code.CreatedAt.Add(accessCodeLife)) {
+			if code.Used {
 				return errAlreadyUsed
 			}
 
@@ -161,13 +162,45 @@ func shareHandler(ctx context.Context, w http.ResponseWriter, r *http.Request) e
 		return err
 	}
 	id := base64.RawURLEncoding.EncodeToString(b)
-
 	key := datastore.NewKey(ctx, "AccessCode", id, 0, nil)
-	_, err = datastore.Put(ctx, key, code)
-	if err != nil {
+
+	err = datastore.RunInTransaction(ctx, func(ctx context.Context) error {
+		_, err := datastore.Put(ctx, key, code)
+		if err != nil {
+			return err
+		}
+
+		fn := delay.Func(id, func(ctx context.Context, id string) error {
+			err := datastore.RunInTransaction(ctx, func(ctx context.Context) error {
+				key := datastore.NewKey(ctx, "AccessCode", id, 0, nil)
+				entity := new(AccessCode)
+				err := datastore.Get(ctx, key, entity)
+				if err != nil {
+					return err
+				}
+				if !entity.Used {
+					err := datastore.Delete(ctx, key)
+					return err
+				}
+				return nil
+			}, nil)
+			return err
+		})
+
+		task, err := fn.Task(id)
+		if err != nil {
+			return err
+		}
+
+		task.Name = id
+		task.Delay = accessCodeLife
+		_, err = taskqueue.Add(ctx, task, "")
+
+		return err
+	}, nil)
+	if err != nil && err != datastore.ErrConcurrentTransaction {
 		return err
 	}
-	// TODO: remove unused after X time
 
 	fmt.Fprintf(w, `<a href="/?code=%s">Access link</a>`, id)
 	return nil
