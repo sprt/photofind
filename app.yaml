@@ -10,5 +10,11 @@ env_variables:
 handlers:
 - url: /static
   static_dir: static
+  secure: always
+- url: /share
+  login: admin
+  secure: always
+  script: _go_app
 - url: /.*
+  secure: always
   script: _go_app
