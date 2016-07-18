@@ -198,6 +198,11 @@ function onSearchFormSubmit(e) {
   output.innerHTML = outputStr;
 }
 
+function onQueryChange(e) {
+  searchForm["q"].value = searchForm["q"].value.replace(/\s/g, "");
+}
+
 uploadForm["images"].addEventListener("change", onUploadFormSubmit);
 searchForm.addEventListener("submit", onSearchFormSubmit);
+searchForm["q"].addEventListener("input", onQueryChange);
 </script>
