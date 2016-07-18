@@ -170,7 +170,7 @@ func shareHandler(ctx context.Context, w http.ResponseWriter, r *http.Request) e
 			return err
 		}
 
-		fn := delay.Func(id, func(ctx context.Context, id string) error {
+		fn := delay.Func("", func(ctx context.Context, id string) error {
 			err := datastore.RunInTransaction(ctx, func(ctx context.Context) error {
 				key := datastore.NewKey(ctx, "AccessCode", id, 0, nil)
 				entity := new(AccessCode)
@@ -192,7 +192,7 @@ func shareHandler(ctx context.Context, w http.ResponseWriter, r *http.Request) e
 			return err
 		}
 
-		task.Name = id
+		task.Name = ""
 		task.Delay = accessCodeLife
 		_, err = taskqueue.Add(ctx, task, "")
 
