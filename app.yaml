@@ -8,8 +8,9 @@ env_variables:
   GOOGLE_APPLICATION_CREDENTIALS: "service_account.json"
 
 handlers:
-- url: /static
-  static_dir: static
+- url: /spinner\.gif
+  static_files: spinner.gif
+  upload: spinner.gif
   secure: always
 - url: /share
   login: admin

@@ -32,7 +32,7 @@ const (
 var (
 	errAlreadyUsed = errors.New("access code already used")
 	secret         = must(os.Getenv("SECRET"))
-	templates      = template.Must(template.ParseFiles("templates/index.html"))
+	templates      = template.Must(template.ParseFiles("index.html"))
 	s              = securecookie.New([]byte(secret), nil)
 )
 
