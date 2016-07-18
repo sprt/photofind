@@ -92,7 +92,7 @@ func indexHandler(ctx context.Context, w http.ResponseWriter, r *http.Request) e
 
 			return nil
 		}, nil)
-		if err != nil && err != datastore.ErrConcurrentTransaction {
+		if err != nil {
 			return err
 		}
 
@@ -198,7 +198,7 @@ func shareHandler(ctx context.Context, w http.ResponseWriter, r *http.Request) e
 
 		return err
 	}, nil)
-	if err != nil && err != datastore.ErrConcurrentTransaction {
+	if err != nil {
 		return err
 	}
 
