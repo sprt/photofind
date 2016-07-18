@@ -1,0 +1,6 @@
+photofind lets you upload images and search text within them.
+OCR is done via the Google Cloud Vision API.
+
+Access to the demo at https://photofind1.appspot.com is restricted since the
+Cloud Vision API's free quota is limited to 1,000 images per month.
+Contact me at hellosprt@gmail.com to get access (or break the access control).
